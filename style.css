@@ -50,3 +50,8 @@
 
 /* Group mode */
 .group-videos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:22px 0}.group-videos video{width:100%;aspect-ratio:4/3;object-fit:cover;background:#151611;display:block}.group-videos #groupLocal{transform:scaleX(-1)}.group-videos .remote-panel{min-width:0}.group-booth .together-photos{max-width:660px}.group-booth .together-photos img{width:100%;height:auto;aspect-ratio:auto;display:block}.group-booth[hidden],.together[hidden],.studio[hidden]{display:none!important}.mode-switch{flex-wrap:wrap}.group-booth .group-slot .remote-label span{white-space:nowrap}
+
+/* Monochrome SVG UI icons: no Apple emoji fallback. */
+.pk-icon{display:inline-block;vertical-align:-.16em;width:1em;height:1em;flex:none;color:inherit;stroke:currentColor;fill:none;pointer-events:none}
+button .pk-icon,a .pk-icon{margin-left:.32em}
+.wordmark .pk-mark{margin-left:0;vertical-align:baseline}

@@ -1,3 +1,4 @@
+const PK_ARROW_UP_RIGHT = '<svg class="pk-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 17 17 7 M7 7h10v10"></path></svg>';
 'use strict';
 const $=id=>document.getElementById(id);
 const video=$('video'),startCamera=$('startCamera'),startSession=$('startSession'),retakeAll=$('retakeAll'),retakeOne=$('retakeOne'),download=$('download'),downloadJpg=$('downloadJpg');
@@ -35,7 +36,7 @@ async function cameraOn(){
     if(stream!==media)throw Error('Camera session was interrupted.');
     // play() success means playback started; dimensions may arrive shortly after.
     $('cameraStatus').textContent='● CAMERA LIVE';
-    startCamera.innerHTML='RESTART CAMERA <span>↗</span>';
+    startCamera.innerHTML='RESTART CAMERA <span>'+PK_ARROW_UP_RIGHT+'</span>';
     status('Camera ready. Pick a countdown, then take your four photos.');
     const track=media.getVideoTracks()[0];
     track.addEventListener('ended',()=>{if(stream===media){stopCamera();cameraOff();status('Camera disconnected. Turn it on again.');buttons()}});
