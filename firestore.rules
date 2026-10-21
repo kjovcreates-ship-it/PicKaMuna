@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Demo rooms: anyone who knows the random room code can access the room.
+    // Not suitable for confidential content or a large public deployment.
+    match /photoboothRooms/{roomId} {
+      allow get, create, update: if roomId.matches('[A-Z2-9]{6}')
+        && request.time < timestamp.date(2027, 12, 31);
+      allow list, delete: if false;
+      match /{candidateCollection}/{candidateId} {
+        allow create: if candidateCollection in ['hostCandidates', 'guestCandidates']
+          && roomId.matches('[A-Z2-9]{6}')
+          && request.time < timestamp.date(2027, 12, 31);
+        allow get, list: if candidateCollection in ['hostCandidates', 'guestCandidates']
+          && request.time < timestamp.date(2027, 12, 31);
+        allow update, delete: if false;
+      }
+    }
+  }
+}
