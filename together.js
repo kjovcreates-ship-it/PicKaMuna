@@ -63,12 +63,12 @@ async function startRound(id,startAt){if(busy)return;busy=true;round=id;localSho
 el('togetherStart').addEventListener('click',()=>{if(!isHost||!connected||busy)return;const startAt=Date.now()+4000;const id=Date.now();send({type:'begin',round:id,startAt});startRound(id,startAt)});
 const togetherPapers={cream:'#eee4cd',red:'#e4a49a',green:'#b8c3a6',blue:'#a9c0c7',dark:'#252722'};
 const togetherFilters={vintage:'sepia(.28) contrast(1.09) saturate(.82) brightness(1.04)',original:'none',mono:'grayscale(1) contrast(1.13)',sepia:'sepia(.85) contrast(1.05)',soft:'saturate(.65) brightness(1.1) contrast(.9)'};
-let togetherLayout='strip',togetherPaper='cream',togetherFilter='vintage',togetherFrame='classic',togetherSticker='none',togetherGrain=18;
+let togetherLayout='strip',togetherPaper='cream',togetherFilter='vintage',togetherFrame='classic',togetherSticker='none',togetherStickerDensity='medium',togetherGrain=18;
 const grainTile=document.createElement('canvas');grainTile.width=128;grainTile.height=128;{const gc=grainTile.getContext('2d'),d=gc.createImageData(128,128);for(let i=0;i<d.data.length;i+=4){let v=Math.random()*255;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=Math.random()*100}gc.putImageData(d,0,0)}
 for(const [group,attribute,update] of [['togetherLayouts','tlayout',v=>togetherLayout=v],['togetherPapers','tpaper',v=>togetherPaper=v],['togetherFilters','tfilter',v=>togetherFilter=v],['togetherFrames','tframe',v=>togetherFrame=v],['togetherStickers','tsticker',v=>togetherSticker=v]]){
   el(group).addEventListener('click',event=>{const button=event.target.closest('button');if(!button||!button.dataset[attribute])return;update(button.dataset[attribute]);el(group).querySelectorAll('button').forEach(b=>b.classList.toggle('selected',b===button));renderPhotos()});
 }
-el('togetherCaption').addEventListener('input',renderPhotos);el('togetherGrain').addEventListener('input',e=>{togetherGrain=Number(e.target.value);el('togetherGrainValue').textContent=togetherGrain+'%';renderPhotos()});
+el('togetherStickersDensity').addEventListener('change',e=>{togetherStickerDensity=e.target.value;renderPhotos()});el('togetherCaption').addEventListener('input',renderPhotos);el('togetherGrain').addEventListener('input',e=>{togetherGrain=Number(e.target.value);el('togetherGrainValue').textContent=togetherGrain+'%';renderPhotos()});
 function drawPair(ctx,left,right,x,y,w,h){
   const half=w/2;
   for(let side=0;side<2;side++){
@@ -91,7 +91,7 @@ async function buildTogetherCanvas(preview=false){
     ctx.fillStyle=togetherPaper==='dark'?'#eee4cd':'#252722';ctx.globalAlpha=.45;ctx.font='13px monospace';ctx.fillText(String(i+1).padStart(2,'0'),x+5,y+photoH-7);ctx.globalAlpha=1;
   }
   if(togetherGrain>0){ctx.save();ctx.globalAlpha=togetherGrain/160;const pattern=ctx.createPattern(grainTile,'repeat');ctx.fillStyle=pattern;ctx.fillRect(pad,top,W-pad*2,rows*photoH+(rows-1)*gap);ctx.restore()}
-  if(togetherSticker!=='none'){ctx.save();ctx.font='34px Georgia,serif';ctx.fillStyle=ink;ctx.globalAlpha=.8;const symbols={stars:['✦','✧','★'],hearts:['♥','♡','♥'],spark:['✳','✦','✳']}[togetherSticker];for(let i=0;i<4;i++){ctx.fillText(symbols[i%3],pad-20+(i%2)*(W-pad*2+3),top+35+i*(((rows*photoH+(rows-1)*gap)-70)/3))}ctx.restore()}
+  window.PKMStickers.draw(ctx,togetherSticker,togetherStickerDensity,{x:pad,y:top,w:W-pad*2,h:rows*photoH+(rows-1)*gap},ink);
   ctx.fillStyle=ink;ctx.font='21px Georgia,serif';ctx.textAlign='left';ctx.fillText((el('togetherCaption').value||' ').slice(0,36),pad,H-42,W-pad*2-130);
   ctx.textAlign='right';ctx.font='15px monospace';ctx.fillText(new Date().toLocaleDateString(),W-pad,H-42);
   return canvas;

@@ -44,3 +44,10 @@ Group camera requests now target 640x480 at 15 fps and each outgoing peer connec
 
 ## Monochrome 2.0 redesign
 UI-only CSS/HTML update inspired by the approved preview. Preserves JavaScript modules and Firebase settings from Connection Fix. GA4 G-FWP5VDNRZE in index.html. Hero images are stylized placeholders, not actual visitor photos. TURN relay still requires provider credentials.
+
+
+Sticker collection update: Added Flowers, Moons, Bolts, Dots, XOXO and Clovers across Solo, Duo and Group, including exported images. No changes to WebRTC, Firebase, or Analytics.
+
+
+## Sticker density (new)
+All three booths offer Minimal (3), Balanced (6, default), and Decorated (11) stickers. Solo previews use the same deterministic sticker positions as the exported PNG/JPG canvas. Duo and Group use their canvas composition for both previews and exports. `sticker-engine.js` must be deployed alongside the other JavaScript files. Solo density is saved with local preferences.
