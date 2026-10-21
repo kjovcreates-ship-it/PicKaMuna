@@ -1,28 +1,18 @@
-# PicKaMuna — Retro Photobooth
-
-A static, privacy-friendly four-shot photobooth website with a retro design.
-
-## Features
-- Webcam/mobile camera with camera picker
-- 3, 5, or 10 second countdown before each of four shots
-- Live strip preview, five filters, five paper colors, three frame styles
-- Custom caption, start-over/retake entire session, high-resolution PNG export
-- Responsive layout, no account, no server, no photo uploads
+# PicKaMuna
+A retro-inspired four-shot photobooth, built with plain HTML/CSS/JavaScript. No backend or build tools needed.
 
 ## Deploy to Vercel
-1. Unzip this folder.
-2. Import the folder into a GitHub repository (put `index.html` at the repo root).
-3. On Vercel, click **Add New > Project**, import the repo, choose **Other** as framework, leave build command empty, and deploy.
-4. Visit the HTTPS URL and allow camera permission.
+Upload the contents of this folder (index.html, style.css, app.js) to the root of a GitHub repository. Import it into Vercel using the **Other** framework preset and deploy. You can also use Vercel's static deployment workflow.
 
-You can also deploy the folder with the Vercel CLI (`vercel --prod`).
+## Camera troubleshooting
+- Camera permissions work on HTTPS and localhost, not usually file:// or ordinary HTTP.
+- Open the HTTPS Vercel deployment, click **TURN CAMERA ON**, and allow permission in the browser prompt.
+- If previously blocked, change camera permission for your site in the browser's site settings.
+- Close Zoom/other apps using the camera, or switch the camera selector.
+- In some in-app browsers or embedded previews, camera access is unavailable; open the deployed URL in Safari or Chrome directly.
+- If you are inside an iframe, the host must allow `camera` via Permissions Policy and iframe `allow="camera"`.
 
-## Run locally
-Use a localhost server, e.g. `python3 -m http.server 8000`, then open `http://localhost:8000`.
-Opening the HTML via `file://` may prevent camera access. HTTPS or localhost is required.
+## Features
+Four timed captures, selectable camera, five live photo filters, five paper colors, three frame styles, custom caption, and client-side PNG download. Photos never upload to a server.
 
-## Notes
-- Photos remain in browser memory until the page is closed; none are uploaded.
-- The **Start over** button retakes the whole four-shot session, not individual shots.
-- External Google Fonts are used for typography; the app still functions without them.
-- Downloaded PNG dimensions are 1440 px wide and vary in height with the frame style.
+Footer attribution links to https://kjovcreates.vercel.app.
