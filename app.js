@@ -7,51 +7,38 @@ let stream=null,photos=[],filter='vintage',paper='cream',frame='classic',running
 $('year').textContent=new Date().getFullYear();$('stripDate').textContent=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
 function status(msg){$('helper').textContent=msg}
 function buttons(){startCamera.disabled=opening||running;startSession.disabled=!stream||running||opening;retakeAll.disabled=running||photos.length===0;download.disabled=photos.length!==4||running;$('timer').disabled=running;$('cameraSelect').disabled=running||opening}
-function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.pause();video.srcObject=null;video.classList.remove('ready')}
+function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.pause();video.srcObject=null;video.classList.remove('ready');video.style.opacity=''}
 function showError(msg){$('cameraError').hidden=false;$('cameraError').textContent=msg;status(msg)}
 function cameraOff(){video.classList.remove('ready');$('cameraEmpty').hidden=false;$('cameraStatus').textContent='● OFF AIR'}
 async function cameraList(){if(!navigator.mediaDevices?.enumerateDevices)return;try{const cams=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');const select=$('cameraSelect'),selected=select.value;select.replaceChildren(new Option('DEFAULT CAMERA',''));cams.forEach((d,i)=>select.add(new Option(d.label||`CAMERA ${i+1}`,d.deviceId)));if([...select.options].some(o=>o.value===selected))select.value=selected}catch(e){console.warn('Camera list:',e)}}
-async function waitForFrame(el, timeout=8000){
-  if(el.readyState>=2 && el.videoWidth>0)return;
-  await new Promise((resolve,reject)=>{
-    let done=false;
-    const cleanup=()=>{el.removeEventListener('loadeddata',check);el.removeEventListener('playing',check);el.removeEventListener('resize',check);clearInterval(poll);clearTimeout(timer)};
-    const finish=(err)=>{if(done)return;done=true;cleanup();err?reject(err):resolve()};
-    const check=()=>{if(el.readyState>=2 && el.videoWidth>0)finish()};
-    el.addEventListener('loadeddata',check);el.addEventListener('playing',check);el.addEventListener('resize',check);
-    const poll=setInterval(check,100);
-    const timer=setTimeout(()=>finish(new Error('No video frames received within 8 seconds.')),timeout);
-    check();
-  });
-}
 async function cameraOn(){
   if(opening||running)return;
   if(!window.isSecureContext){showError('Camera access requires HTTPS or localhost.');return}
   if(!navigator.mediaDevices?.getUserMedia){showError('Camera API unavailable in this browser.');return}
   opening=true;buttons();$('cameraError').hidden=true;
   stopCamera();cameraOff();status('Connecting to your camera…');
+  let media=null;
   try{
     const selected=$('cameraSelect').value;
-    let media;
-    try{media=await navigator.mediaDevices.getUserMedia({audio:false,video:selected?{deviceId:{exact:selected}}:{facingMode:'user',width:{ideal:1280},height:{ideal:960}}})}
-    catch(err){if(selected&&['OverconstrainedError','NotFoundError'].includes(err.name))media=await navigator.mediaDevices.getUserMedia({audio:false,video:true});else throw err}
+    try{media=await navigator.mediaDevices.getUserMedia({video:selected?{deviceId:{exact:selected}}:true,audio:false})}
+    catch(err){if(selected&&['OverconstrainedError','NotFoundError'].includes(err.name))media=await navigator.mediaDevices.getUserMedia({video:true,audio:false});else throw err}
     stream=media;
-    video.muted=true;video.autoplay=true;video.playsInline=true;
+    // Use the same simple, proven playback sequence as a standalone camera test.
+    // Keep the video fully visible and attached to the document during playback.
+    video.muted=true;video.defaultMuted=true;video.autoplay=true;video.playsInline=true;
+    video.style.opacity='1';video.style.visibility='visible';
     video.srcObject=media;
-    // Keep the video renderable before playback; visibility:hidden can stall some browsers.
     video.classList.add('ready');
     $('cameraEmpty').hidden=true;
-    const playPromise=video.play();
-    // Do not await play() before checking for frames: some browsers leave it pending.
-    if(playPromise&&typeof playPromise.catch==='function')playPromise.catch(err=>console.warn('Camera video playback:',err));
-    await waitForFrame(video);
-    if(stream!==media)throw new Error('Camera session was interrupted.');
+    await video.play();
+    if(stream!==media)throw Error('Camera session was interrupted.');
+    // play() success means playback started; dimensions may arrive shortly after.
     $('cameraStatus').textContent='● CAMERA LIVE';
     startCamera.innerHTML='RESTART CAMERA <span>↗</span>';
     status('Camera ready. Pick a countdown, then take your four photos.');
     const track=media.getVideoTracks()[0];
     track.addEventListener('ended',()=>{if(stream===media){stopCamera();cameraOff();status('Camera disconnected. Turn it on again.');buttons()}});
-    await cameraList();
+    cameraList().catch(console.warn);
   }catch(e){
     console.error('PicKaMuna camera startup failed:',e);
     stopCamera();cameraOff();
