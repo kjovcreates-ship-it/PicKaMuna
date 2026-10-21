@@ -55,3 +55,5 @@ All three booths offer Minimal (3), Balanced (6, default), and Decorated (11) st
 
 ## Preview / download matching fix
 Completed Solo strips now preview the **same Canvas composition** used for PNG/JPG export. This fixes differing sticker positions, image crops, borders, and paper layout caused by separate CSS and Canvas renderers. Tap a photo in the finished preview to select it for retaking. Duo and Group already render previews through their export Canvas pipeline. JPEG compression may slightly change pixel colors versus the PNG preview.
+
+Sticker contrast update: all booth canvas compositions now render stickers with dual contrasting keylines so stickers remain visible on all paper colors and over light/dark photo areas. The shared renderer keeps preview and export consistent.
