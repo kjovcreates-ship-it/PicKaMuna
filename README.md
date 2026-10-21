@@ -57,3 +57,18 @@ All three booths offer Minimal (3), Balanced (6, default), and Decorated (11) st
 Completed Solo strips now preview the **same Canvas composition** used for PNG/JPG export. This fixes differing sticker positions, image crops, borders, and paper layout caused by separate CSS and Canvas renderers. Tap a photo in the finished preview to select it for retaking. Duo and Group already render previews through their export Canvas pipeline. JPEG compression may slightly change pixel colors versus the PNG preview.
 
 Sticker contrast update: all booth canvas compositions now render stickers with dual contrasting keylines so stickers remain visible on all paper colors and over light/dark photo areas. The shared renderer keeps preview and export consistent.
+
+
+## Reliability maintenance update
+- Guard against repeated room create/join actions while an operation is running.
+- Duo and Group photo chunks now include expected lengths and acknowledge receipt; unacknowledged photos are retransmitted while the channel is open.
+- Room documents include a `deleteAfter` Timestamp for optional Firestore TTL; enable the TTL policy separately.
+- See SECURITY-SETUP.md. The currently deployed Firestore rules remain unchanged to avoid silently breaking existing rooms.
+- TURN is NOT activated without valid provider credentials.
+- Static syntax checks are not substitutes for real browser / multiplayer testing.
+
+### Sticker picker update
+Sticker choices now expand/collapse in Solo, Duo and Group. Dots and XOXO were removed; existing saved preferences for removed styles fall back to None. Sticker density and exports remain unchanged.
+
+## Mixed sticker designs
+Sticker chooser now supports multiple selected designs in Solo, Duo and Group. Click a selected design again to remove it; NONE clears all selections. Light/Medium/Heavy set the total sticker count, shared across selected designs. Previews and PNG/JPG exports use the same deterministic sticker engine. Solo selections are saved to local preferences.
