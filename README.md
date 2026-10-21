@@ -26,3 +26,13 @@ The Firebase web app config is already filled in `firebase-config.js`. This is a
 
 ## Together strip redesign
 Together photos now render as a single styled print: four paired frames, each showing both participants side by side. Choose 4-cut strip or 2x2 grid, paper color, film filter and caption in Together. These settings apply to the preview and downloaded PNG. Live camera/room connection code remains unchanged.
+
+
+## Version 3 updates
+- Solo / Together tabs near top, with no long Together section below the solo booth.
+- Together mode adds the Solo film grain, frames, stickers, PNG and JPG exports, plus existing filter and paper options.
+- Incoming ICE candidates are queued until remote SDP is set, preventing a common intermittent joining race.
+- Invite links open Together mode and fill the room code; user taps JOIN to authorize camera.
+- If a room is stale or already used, host must create a new room.
+- Cross-network connections may still fail without a TURN relay. Firebase signaling alone cannot guarantee connectivity.
+- Existing Firestore test rules are permissive and must be secured before public launch.

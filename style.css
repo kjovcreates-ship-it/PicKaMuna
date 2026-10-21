@@ -39,3 +39,11 @@
 .together-style .caption-row input{max-width:260px;width:100%;padding:10px;background:transparent;border:1px solid currentColor;color:inherit}
 .together-photos{display:block;max-width:390px;margin:28px auto;background:transparent}
 .together-photos img{display:block;width:100%;height:auto;aspect-ratio:auto;box-shadow:10px 15px 0 rgba(0,0,0,.10)}
+
+/* The booth is a mode, not a separate long section */
+.mode-switch{display:flex;gap:0;max-width:1400px;margin:0 auto;padding:0 5vw 24px}
+.mode-button{font:inherit;font-weight:800;letter-spacing:.08em;cursor:pointer;padding:17px 24px;border:2px solid #292a23;background:transparent;color:inherit;flex:1;text-align:center}
+.mode-button+ .mode-button{border-left:0}.mode-button.active{background:#252722;color:#eee4cd}
+.together[hidden],.studio[hidden]{display:none!important}
+.together{border-top:0;padding-top:12px}.together .together-style{max-width:850px}.together-photos img{width:100%;height:auto;aspect-ratio:auto;object-fit:contain}
+@media(max-width:650px){.mode-button{font-size:12px;padding:14px 8px}.together{margin-bottom:35px}}
