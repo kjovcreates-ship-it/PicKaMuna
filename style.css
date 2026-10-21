@@ -193,3 +193,17 @@ footer a:hover{color:#555}
 .sticker-chevron{font-size:18px;line-height:1;transition:transform .15s}
 .sticker-chooser[open] .sticker-chevron{transform:rotate(180deg)}
 .sticker-chooser .option-group{padding:10px 0 2px}
+
+/* Sticker design selector: compact dropdown, like the density control.
+   Menu floats above subsequent settings rather than expanding the page. */
+.sticker-choice-row{position:relative;z-index:3}
+.sticker-choice-row:has(.sticker-chooser[open]){z-index:30}
+.sticker-chooser{position:relative}
+.sticker-chooser summary{background:transparent;border:1px solid currentColor;border-radius:4px;min-height:40px;padding:10px 12px}
+.sticker-chooser .option-group{display:none;position:absolute;z-index:50;top:calc(100% + 4px);left:0;right:0;max-height:250px;overflow-y:auto;overscroll-behavior:contain;background:#faf9f6;border:1px solid #bcb8aa;border-radius:4px;box-shadow:0 12px 25px #0002;padding:5px;flex-direction:column;flex-wrap:nowrap;gap:1px}
+.sticker-chooser[open] .option-group{display:flex}
+.sticker-chooser .option-group button{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border:0;border-radius:3px;background:transparent;color:#252722;padding:10px 11px;min-height:37px}
+.sticker-chooser .option-group button::before{content:' ';width:15px;height:15px;flex:0 0 15px;border:1px solid #aaa69d;border-radius:3px;display:grid;place-items:center;font-size:11px}
+.sticker-chooser .option-group button.selected{background:#eae7df;color:#252722}
+.sticker-chooser .option-group button.selected::before{content:'✓';background:#252722;color:white;border-color:#252722}
+.sticker-chooser .option-group button:hover{background:#f0eee8}

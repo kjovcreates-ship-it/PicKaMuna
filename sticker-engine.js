@@ -34,4 +34,15 @@
   function toggle(value,choice){const current=normalize(value);if(choice==='none')return [];return current.includes(choice)?current.filter(x=>x!==choice):[...current,choice];}
   function update(id,attribute,value){const chosen=normalize(value);const group=document.getElementById(id);if(!group)return;for(const b of group.querySelectorAll('button')){const v=b.dataset[attribute];const active=v==='none'?!chosen.length:chosen.includes(v);b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active));}const summary=group.closest('details')?.querySelector('summary');if(summary?.firstChild)summary.firstChild.textContent=chosen.length?chosen.length===1?chosen[0].toUpperCase():(chosen.length+' DESIGNS SELECTED'):'NONE ';}
   window.PKMStickerChoice={normalize,toggle,update};
+  // Close floating menus when the user clicks outside or presses Escape.
+  document.addEventListener('pointerdown',event=>{
+    for(const menu of document.querySelectorAll('.sticker-chooser[open]')){
+      if(!menu.contains(event.target))menu.open=false;
+    }
+  });
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape')for(const menu of document.querySelectorAll('.sticker-chooser[open]')){
+      menu.open=false;menu.querySelector('summary')?.focus();
+    }
+  });
 })();
