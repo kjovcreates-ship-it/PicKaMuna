@@ -74,3 +74,6 @@ Sticker choices now expand/collapse in Solo, Duo and Group. Dots and XOXO were r
 Sticker chooser now supports multiple selected designs in Solo, Duo and Group. Click a selected design again to remove it; NONE clears all selections. Light/Medium/Heavy set the total sticker count, shared across selected designs. Previews and PNG/JPG exports use the same deterministic sticker engine. Solo selections are saved to local preferences.
 
 Sticker update: XO is available again as a selectable design in Solo, Duo and Group, including mixed selections and exports.
+
+### Device-independent stickers (October 2026)
+All eight sticker designs (stars, hearts, sparks, flowers, moons, bolts, clovers, XO) are now custom SVG path artwork. The same paths render using Canvas Path2D for photostrip previews and PNG/JPG exports, avoiding device-specific Unicode font substitutions. Sticker selection, mixed designs, density, and contrast behavior are preserved. Test on Safari/iOS and Chrome/Android before production deployment.

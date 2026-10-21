@@ -11,7 +11,7 @@ function status(msg){$('helper').textContent=msg}
 function buttons(){const count=shotCount();const label=startSession.firstChild;if(label&&label.nodeType===Node.TEXT_NODE)label.textContent=`TAKE ${count} PHOTOS `;startCamera.disabled=opening||running;startSession.disabled=!stream||running||opening;retakeAll.disabled=running||photos.length===0;retakeOne.disabled=running||!stream||selectedPhoto<0||!photos[selectedPhoto];download.disabled=photos.length!==shotCount()||running;downloadJpg.disabled=download.disabled;$('timer').disabled=running;$('cameraSelect').disabled=running||opening;$('layouts').querySelectorAll('button').forEach(b=>b.disabled=running)}
 function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.pause();video.srcObject=null;video.classList.remove('ready');video.style.opacity=''}
 function showError(msg){$('cameraError').hidden=false;$('cameraError').textContent=msg;status(msg)}
-function cameraOff(){video.classList.remove('ready');$('cameraEmpty').hidden=false;$('cameraStatus').textContent='● OFF AIR'}
+function cameraOff(){video.classList.remove('ready');$('cameraEmpty').hidden=false;$('cameraStatus').textContent='● OFF AIR';$('cameraStatus').classList.remove('is-live')}
 async function cameraList(){if(!navigator.mediaDevices?.enumerateDevices)return;try{const cams=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');const select=$('cameraSelect'),selected=select.value;select.replaceChildren(new Option('DEFAULT CAMERA',''));cams.forEach((d,i)=>select.add(new Option(d.label||`CAMERA ${i+1}`,d.deviceId)));if([...select.options].some(o=>o.value===selected))select.value=selected}catch(e){console.warn('Camera list:',e)}}
 async function cameraOn(){
   if(opening||running)return;
@@ -35,7 +35,7 @@ async function cameraOn(){
     await video.play();
     if(stream!==media)throw Error('Camera session was interrupted.');
     // play() success means playback started; dimensions may arrive shortly after.
-    $('cameraStatus').textContent='● CAMERA LIVE';
+    $('cameraStatus').textContent='● CAMERA LIVE';$('cameraStatus').classList.add('is-live');
     startCamera.innerHTML='RESTART CAMERA <span>'+PK_ARROW_UP_RIGHT+'</span>';
     status(`Camera ready. Pick a countdown, then take your ${shotCount()} photos.`);
     const track=media.getVideoTracks()[0];

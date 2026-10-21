@@ -207,3 +207,11 @@ footer a:hover{color:#555}
 .sticker-chooser .option-group button.selected{background:#eae7df;color:#252722}
 .sticker-chooser .option-group button.selected::before{content:'✓';background:#252722;color:white;border-color:#252722}
 .sticker-chooser .option-group button:hover{background:#f0eee8}
+
+/* Red accents for the headline period and camera-live indicators. */
+.hero-period{color:#df3e36}
+.kicker .dot{background:#df3e36}
+#cameraStatus.is-live{color:#df3e36}
+.viewfinder-overlay .recording-dot{color:#ff514a;text-shadow:0 0 5px #000}
+/* Vector sticker artwork: no platform-dependent glyph fonts. */
+.pk-vector-sticker{display:block;position:absolute;overflow:visible;pointer-events:none;flex:none}
