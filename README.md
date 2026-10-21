@@ -16,3 +16,7 @@ Upload the contents of this folder (index.html, style.css, app.js) to the root o
 Four timed captures, selectable camera, five live photo filters, five paper colors, three frame styles, custom caption, and client-side PNG download. Photos never upload to a server.
 
 Footer attribution links to https://kjovcreates.vercel.app.
+
+
+## Camera fix (v3)
+The camera viewfinder is now visible to the browser before playback starts. Previous code kept the video `visibility:hidden` and waited on `video.play()`, which can stall playback in some browsers. The new startup checks for real video frames with a timeout and shows useful errors instead of silently waiting. Camera access requires HTTPS (Vercel provides it).

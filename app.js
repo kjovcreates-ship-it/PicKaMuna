@@ -11,7 +11,58 @@ function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=
 function showError(msg){$('cameraError').hidden=false;$('cameraError').textContent=msg;status(msg)}
 function cameraOff(){video.classList.remove('ready');$('cameraEmpty').hidden=false;$('cameraStatus').textContent='● OFF AIR'}
 async function cameraList(){if(!navigator.mediaDevices?.enumerateDevices)return;try{const cams=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');const select=$('cameraSelect'),selected=select.value;select.replaceChildren(new Option('DEFAULT CAMERA',''));cams.forEach((d,i)=>select.add(new Option(d.label||`CAMERA ${i+1}`,d.deviceId)));if([...select.options].some(o=>o.value===selected))select.value=selected}catch(e){console.warn('Camera list:',e)}}
-async function cameraOn(){if(opening||running)return;if(!window.isSecureContext){showError('Camera access requires HTTPS or localhost. Open your deployed Vercel URL (https://), not a local file.');return}if(!navigator.mediaDevices?.getUserMedia){showError('This browser does not support camera access. Try an updated Chrome, Safari, or Firefox.');return}opening=true;buttons();$('cameraError').hidden=true;cameraOff();stopCamera();try{const selected=$('cameraSelect').value;let media;try{media=await navigator.mediaDevices.getUserMedia({audio:false,video:selected?{deviceId:{exact:selected}}:{facingMode:'user',width:{ideal:1280},height:{ideal:960}}})}catch(err){if(selected&&['OverconstrainedError','NotFoundError'].includes(err.name)){media=await navigator.mediaDevices.getUserMedia({audio:false,video:true})}else throw err}stream=media;video.srcObject=stream;video.muted=true;video.setAttribute('playsinline','');await video.play();if(!video.videoWidth){await Promise.race([new Promise(resolve=>video.addEventListener('loadedmetadata',resolve,{once:true})),new Promise((_,reject)=>setTimeout(()=>reject(new Error('Camera timed out')),6000))])}video.classList.add('ready');$('cameraEmpty').hidden=true;$('cameraStatus').textContent='● CAMERA LIVE';startCamera.innerHTML='RESTART CAMERA <span>↗</span>';status('Camera ready. Pick a countdown, then take your four photos.');const track=stream.getVideoTracks()[0];track.addEventListener('ended',()=>{if(stream&&stream.getVideoTracks()[0]===track){stopCamera();cameraOff();status('Camera disconnected. Turn it on again.');buttons()}});await cameraList()}catch(e){stopCamera();cameraOff();let msg='Could not start the camera. ';if(['NotAllowedError','PermissionDeniedError','SecurityError'].includes(e.name))msg+='Camera access was blocked. Allow camera access in the browser address bar or site settings, then retry.';else if(['NotFoundError','DevicesNotFoundError'].includes(e.name))msg+='No camera was found. Check that a camera is connected.';else if(['NotReadableError','TrackStartError'].includes(e.name))msg+='The camera may be in use by another app. Close other camera apps and retry.';else msg+=(e.message||'Try refreshing the page.');showError(msg)}finally{opening=false;buttons()}}
+async function waitForFrame(el, timeout=8000){
+  if(el.readyState>=2 && el.videoWidth>0)return;
+  await new Promise((resolve,reject)=>{
+    let done=false;
+    const cleanup=()=>{el.removeEventListener('loadeddata',check);el.removeEventListener('playing',check);el.removeEventListener('resize',check);clearInterval(poll);clearTimeout(timer)};
+    const finish=(err)=>{if(done)return;done=true;cleanup();err?reject(err):resolve()};
+    const check=()=>{if(el.readyState>=2 && el.videoWidth>0)finish()};
+    el.addEventListener('loadeddata',check);el.addEventListener('playing',check);el.addEventListener('resize',check);
+    const poll=setInterval(check,100);
+    const timer=setTimeout(()=>finish(new Error('No video frames received within 8 seconds.')),timeout);
+    check();
+  });
+}
+async function cameraOn(){
+  if(opening||running)return;
+  if(!window.isSecureContext){showError('Camera access requires HTTPS or localhost.');return}
+  if(!navigator.mediaDevices?.getUserMedia){showError('Camera API unavailable in this browser.');return}
+  opening=true;buttons();$('cameraError').hidden=true;
+  stopCamera();cameraOff();status('Connecting to your camera…');
+  try{
+    const selected=$('cameraSelect').value;
+    let media;
+    try{media=await navigator.mediaDevices.getUserMedia({audio:false,video:selected?{deviceId:{exact:selected}}:{facingMode:'user',width:{ideal:1280},height:{ideal:960}}})}
+    catch(err){if(selected&&['OverconstrainedError','NotFoundError'].includes(err.name))media=await navigator.mediaDevices.getUserMedia({audio:false,video:true});else throw err}
+    stream=media;
+    video.muted=true;video.autoplay=true;video.playsInline=true;
+    video.srcObject=media;
+    // Keep the video renderable before playback; visibility:hidden can stall some browsers.
+    video.classList.add('ready');
+    $('cameraEmpty').hidden=true;
+    const playPromise=video.play();
+    // Do not await play() before checking for frames: some browsers leave it pending.
+    if(playPromise&&typeof playPromise.catch==='function')playPromise.catch(err=>console.warn('Camera video playback:',err));
+    await waitForFrame(video);
+    if(stream!==media)throw new Error('Camera session was interrupted.');
+    $('cameraStatus').textContent='● CAMERA LIVE';
+    startCamera.innerHTML='RESTART CAMERA <span>↗</span>';
+    status('Camera ready. Pick a countdown, then take your four photos.');
+    const track=media.getVideoTracks()[0];
+    track.addEventListener('ended',()=>{if(stream===media){stopCamera();cameraOff();status('Camera disconnected. Turn it on again.');buttons()}});
+    await cameraList();
+  }catch(e){
+    console.error('PicKaMuna camera startup failed:',e);
+    stopCamera();cameraOff();
+    let msg='Could not start the camera. ';
+    if(['NotAllowedError','PermissionDeniedError','SecurityError'].includes(e.name))msg+='Allow camera access in the browser site settings, then retry.';
+    else if(['NotFoundError','DevicesNotFoundError'].includes(e.name))msg+='No camera was found.';
+    else if(['NotReadableError','TrackStartError'].includes(e.name))msg+='Camera may be in use by another app.';
+    else msg+=(e.message||'Try refreshing the page.');
+    showError(msg);
+  }finally{opening=false;buttons()}
+}
 startCamera.addEventListener('click',cameraOn);$('cameraSelect').addEventListener('change',cameraOn);
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 function snap(){if(video.readyState<2||!video.videoWidth)throw Error('Camera has not produced a frame yet');const canvas=$('captureCanvas'),w=960,h=720;canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');const vw=video.videoWidth,vh=video.videoHeight,s=Math.max(w/vw,h/vh),sw=w/s,sh=h/s;ctx.save();ctx.translate(w,0);ctx.scale(-1,1);ctx.drawImage(video,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,w,h);ctx.restore();return canvas.toDataURL('image/jpeg',.94)}
