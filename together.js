@@ -42,7 +42,47 @@ function capture(v){if(v.readyState<2||!v.videoWidth)throw Error('Camera has not
 async function transmit(i,data){send({type:'shot-start',index:i});for(let p=0;p<data.length;p+=12000){while(channel?.readyState==='open' && channel.bufferedAmount>128000)await wait(40);send({type:'shot-chunk',index:i,value:data.slice(p,p+12000)})}send({type:'shot-end',index:i})}
 async function startRound(id,startAt){if(busy)return;busy=true;round=id;localShots=[];remoteShots=[];incoming={};renderPhotos();setUI();try{for(let i=0;i<4;i++){const due=startAt+i*4500;while(Date.now()<due){const remaining=Math.max(0,Math.ceil((due-Date.now())/1000));el('togetherCountdown').hidden=false;el('togetherCountdown').textContent=remaining||'●';await wait(90)}el('togetherCountdown').hidden=true;const shot=capture(el('togetherLocal'));localShots[i]=shot;await transmit(i,shot);renderPhotos();message(`Shot ${i+1} of 4 captured.`)}send({type:'done'});message('Four shots captured! Waiting for your partner’s photos…')}catch(e){error(e)}finally{busy=false;el('togetherCountdown').hidden=true;setUI()}}
 el('togetherStart').addEventListener('click',()=>{if(!isHost||!connected||busy)return;const startAt=Date.now()+4000;const id=Date.now();send({type:'begin',round:id,startAt});startRound(id,startAt)});
-function renderPhotos(){const grid=el('togetherPhotos');grid.replaceChildren();for(let i=0;i<4;i++){for(const src of [localShots[i],remoteShots[i]]){const img=document.createElement('img');img.alt=`Photo ${i+1}`;if(src)img.src=src;else img.style.background='#262822';grid.append(img)}}setUI()}
-async function downloadStrip(){if(localShots.length!==4||remoteShots.length!==4)return;try{const c=document.createElement('canvas');c.width=1000;c.height=1490;const x=c.getContext('2d');x.fillStyle='#eee4cd';x.fillRect(0,0,c.width,c.height);x.fillStyle='#252722';x.font='bold 65px Georgia,serif';x.fillText('PIC KA MUNA',48,88);x.font='23px monospace';x.fillText('TOGETHER / APART',51,126);for(let i=0;i<4;i++){for(let j=0;j<2;j++){const img=new Image();img.src=j===0?localShots[i]:remoteShots[i];await img.decode();x.drawImage(img,48+j*456,156+i*306,448,290)}}x.font='28px Georgia,serif';x.fillText('same moment, different places.',48,1435);x.font='20px monospace';x.fillText(new Date().toLocaleDateString(),750,1435);const blob=await new Promise(resolve=>c.toBlob(resolve,'image/png'));if(!blob)throw Error('Export failed');const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='PicKaMuna-Together.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000)}catch(e){error(e)}}
+const togetherPapers={cream:'#eee4cd',red:'#e4a49a',green:'#b8c3a6',blue:'#a9c0c7',dark:'#252722'};
+const togetherFilters={vintage:'sepia(.28) contrast(1.09) saturate(.82) brightness(1.04)',original:'none',mono:'grayscale(1) contrast(1.13)',sepia:'sepia(.85) contrast(1.05)',soft:'saturate(.65) brightness(1.1) contrast(.9)'};
+let togetherLayout='strip',togetherPaper='cream',togetherFilter='vintage';
+for(const [group,attribute,update] of [['togetherLayouts','tlayout',v=>togetherLayout=v],['togetherPapers','tpaper',v=>togetherPaper=v],['togetherFilters','tfilter',v=>togetherFilter=v]]){
+  el(group).addEventListener('click',event=>{const button=event.target.closest('button');if(!button||!button.dataset[attribute])return;update(button.dataset[attribute]);el(group).querySelectorAll('button').forEach(b=>b.classList.toggle('selected',b===button));renderPhotos()});
+}
+el('togetherCaption').addEventListener('input',renderPhotos);
+function drawPair(ctx,left,right,x,y,w,h){
+  const half=w/2;
+  for(let side=0;side<2;side++){
+    const img=side===0?left:right,dx=x+side*half;
+    ctx.save();ctx.beginPath();ctx.rect(dx,y,half,h);ctx.clip();
+    if(img){const scale=Math.max(half/img.width,h/img.height),sw=half/scale,sh=h/scale;ctx.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,dx,y,half,h)}
+    else{ctx.fillStyle='#363831';ctx.fillRect(dx,y,half,h);ctx.fillStyle='#eee4cd';ctx.font='20px monospace';ctx.textAlign='center';ctx.fillText(side===0?'YOU':'YOUR PERSON',dx+half/2,y+h/2)}
+    ctx.restore();
+  }
+}
+async function buildTogetherCanvas(preview=false){
+  const grid=togetherLayout==='grid',W=grid?900:700,pad=grid?40:48,top=90,gap=grid?16:17,cols=grid?2:1,photoW=(W-pad*2-gap*(cols-1))/cols,photoH=photoW*.74,rows=grid?2:4,H=Math.ceil(top+rows*photoH+(rows-1)*gap+105);
+  const canvas=document.createElement('canvas');const scale=preview?1:2;canvas.width=W*scale;canvas.height=H*scale;
+  const ctx=canvas.getContext('2d');ctx.scale(scale,scale);ctx.fillStyle=togetherPapers[togetherPaper];ctx.fillRect(0,0,W,H);
+  const ink=togetherPaper==='dark'?'#eee4cd':'#252722';ctx.fillStyle=ink;ctx.textAlign='left';ctx.font='800 39px Arial,sans-serif';ctx.fillText('PIC KA MUNA',pad,62);
+  const load=async src=>{if(!src)return null;const img=new Image();img.src=src;await img.decode();return img};
+  for(let i=0;i<4;i++){
+    const [left,right]=await Promise.all([load(localShots[i]),load(remoteShots[i])]);const x=pad+(i%cols)*(photoW+gap),y=top+Math.floor(i/cols)*(photoH+gap);
+    ctx.save();ctx.filter=togetherFilters[togetherFilter];drawPair(ctx,left,right,x,y,photoW,photoH);ctx.restore();
+    ctx.fillStyle=togetherPaper==='dark'?'#eee4cd':'#252722';ctx.globalAlpha=.45;ctx.font='13px monospace';ctx.fillText(String(i+1).padStart(2,'0'),x+5,y+photoH-7);ctx.globalAlpha=1;
+  }
+  ctx.fillStyle=ink;ctx.font='21px Georgia,serif';ctx.textAlign='left';ctx.fillText((el('togetherCaption').value||' ').slice(0,36),pad,H-42,W-pad*2-130);
+  ctx.textAlign='right';ctx.font='15px monospace';ctx.fillText(new Date().toLocaleDateString(),W-pad,H-42);
+  return canvas;
+}
+let previewSerial=0;
+async function renderPhotos(){
+  const serial=++previewSerial,container=el('togetherPhotos');
+  if(!localShots.some(Boolean)&&!remoteShots.some(Boolean)){container.replaceChildren();setUI();return}
+  try{const canvas=await buildTogetherCanvas(true);if(serial!==previewSerial)return;const img=new Image();img.alt='Together photo strip with both people side by side in each frame';img.src=canvas.toDataURL('image/png');container.replaceChildren(img)}catch(e){console.warn('Preview error:',e)}setUI();
+}
+async function downloadStrip(){if(localShots.filter(Boolean).length!==4||remoteShots.filter(Boolean).length!==4)return;try{
+  const c=await buildTogetherCanvas(false);const blob=await new Promise(resolve=>c.toBlob(resolve,'image/png'));if(!blob)throw Error('Export failed');
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='PicKaMuna-Together.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000)
+}catch(e){error(e)}}
 el('togetherDownload').addEventListener('click',downloadStrip);
 setUI();

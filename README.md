@@ -22,3 +22,7 @@ The Firebase web app config is already filled in `firebase-config.js`. This is a
 - The shared session uses an approximate coordinated countdown and is not frame-perfect synchronized.
 - The two-person workflow has not been end-to-end tested with real devices.
 - Keep the retro design and Developed by Kjov portfolio footer.
+
+
+## Together strip redesign
+Together photos now render as a single styled print: four paired frames, each showing both participants side by side. Choose 4-cut strip or 2x2 grid, paper color, film filter and caption in Together. These settings apply to the preview and downloaded PNG. Live camera/room connection code remains unchanged.
