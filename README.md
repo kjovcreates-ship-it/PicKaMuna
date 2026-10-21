@@ -40,3 +40,7 @@ Group camera requests now target 640x480 at 15 fps and each outgoing peer connec
 - Existing Firestore rules remain unchanged; these are insecure demo rules and should not be used for a public launch.
 - ICE restart cannot recover a closed browser tab, expired room, unavailable network, or unsupported relay route.
 - This update was syntax-checked, but requires real-device tests across Wi-Fi and mobile data.
+
+
+## Monochrome 2.0 redesign
+UI-only CSS/HTML update inspired by the approved preview. Preserves JavaScript modules and Firebase settings from Connection Fix. GA4 G-FWP5VDNRZE in index.html. Hero images are stylized placeholders, not actual visitor photos. TURN relay still requires provider credentials.
