@@ -47,3 +47,6 @@
 .together[hidden],.studio[hidden]{display:none!important}
 .together{border-top:0;padding-top:12px}.together .together-style{max-width:850px}.together-photos img{width:100%;height:auto;aspect-ratio:auto;object-fit:contain}
 @media(max-width:650px){.mode-button{font-size:12px;padding:14px 8px}.together{margin-bottom:35px}}
+
+/* Group mode */
+.group-videos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:22px 0}.group-videos video{width:100%;aspect-ratio:4/3;object-fit:cover;background:#151611;display:block}.group-videos #groupLocal{transform:scaleX(-1)}.group-videos .remote-panel{min-width:0}.group-booth .together-photos{max-width:660px}.group-booth .together-photos img{width:100%;height:auto;aspect-ratio:auto;display:block}.group-booth[hidden],.together[hidden],.studio[hidden]{display:none!important}.mode-switch{flex-wrap:wrap}.group-booth .group-slot .remote-label span{white-space:nowrap}

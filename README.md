@@ -1,38 +1,28 @@
-# PicKaMuna Together
+# PicKaMuna — Solo / Duo / Group
 
-Solo photobooth plus a prototype long-distance two-person booth.
+Static website ready for GitHub + Vercel. Uses the existing Firebase web configuration in `firebase-config.js`.
 
-## Deploy
-Upload all files at the root of your GitHub repository, then deploy on Vercel (Framework: Other). No npm or build step required. HTTPS is required for cameras.
+## Upload
+Upload `index.html`, `style.css`, `app.js`, `together.js`, `group.js`, and `firebase-config.js` to the repository root. `README.md` and `firestore.rules` are optional for GitHub.
 
-## Firebase setup
-The Firebase web app config is already filled in `firebase-config.js`. This is a public browser configuration, not a service-account credential.
+## REQUIRED: Firebase rules update
+In Firebase Console → Firestore Database → Rules, replace your current rules with the complete contents of `firestore.rules` and click Publish. The new file **retains Duo rules** and adds `groupRooms` + `signals` rules. Without this update, group room creation will fail with permission-denied.
 
-1. Firebase Console → Build → Firestore Database → Create database (if not already created).
-2. Firestore → Rules: copy `firestore.rules`, then Publish. **These rules are a temporary demo and are NOT suitable for public launch.** They allow anyone knowing a room code to modify room signaling. Do not use for sensitive photos.
-3. Redeploy and test with two separate devices/browsers on HTTPS. Create room on one, join with the code on the other. Grant camera access to both.
-4. For a real public launch, add authentication, room ownership/membership checks, expiration/cleanup, abuse controls, and a TURN service for difficult networks.
+**SECURITY:** Rules are for controlled testing only, not a public production release. There is no Firebase Authentication, room-code authorization, signaling cleanup, rate limiting, or abuse protection. Room codes are not secret credentials. Secure these before opening the feature to the public.
 
-## Notes
-- Solo mode works without Firebase.
-- Together mode uses WebRTC for live video and photo exchange, Firestore for connection signaling.
-- Firestore does not store the photo images; photos are sent to the other participant through the peer connection.
-- Browser restrictions may require clicking the remote video to allow playback.
-- Without a TURN server, two devices on different networks may fail to connect.
-- The shared session uses an approximate coordinated countdown and is not frame-perfect synchronized.
-- The two-person workflow has not been end-to-end tested with real devices.
-- Keep the retro design and Developed by Kjov portfolio footer.
+## Group Booth test
+1. Deploy to Vercel (HTTPS). Select `03 / GROUP BOOTH`.
+2. Create a room on device 1; copy its invitation URL.
+3. Open the link on devices 2–4 and click JOIN ROOM. Allow camera access on each device.
+4. Wait until everyone's video shows LIVE. Host chooses `ONE SHOT EACH / 2×2` or `FOUR SHOTS / 4-CUT` and starts.
+5. Customize film, paper, grain, frame, stickers, caption. Download PNG or JPG.
 
+Group Booth supports 2–4 participants; for exactly two, the existing Duo Booth remains available. Collage takes one photo from each participant; the 4-cut mode captures four synchronized rounds, each with a 2×2 grid of participants.
 
-## Together strip redesign
-Together photos now render as a single styled print: four paired frames, each showing both participants side by side. Choose 4-cut strip or 2x2 grid, paper color, film filter and caption in Together. These settings apply to the preview and downloaded PNG. Live camera/room connection code remains unchanged.
-
-
-## Version 3 updates
-- Solo / Together tabs near top, with no long Together section below the solo booth.
-- Together mode adds the Solo film grain, frames, stickers, PNG and JPG exports, plus existing filter and paper options.
-- Incoming ICE candidates are queued until remote SDP is set, preventing a common intermittent joining race.
-- Invite links open Together mode and fill the room code; user taps JOIN to authorize camera.
-- If a room is stale or already used, host must create a new room.
-- Cross-network connections may still fail without a TURN relay. Firebase signaling alone cannot guarantee connectivity.
-- Existing Firestore test rules are permissive and must be secured before public launch.
+## Known limitations
+- Peer-to-peer WebRTC mesh: some networks need a TURN server (add to `iceServers` in `firebase-config.js`).
+- No clock synchronization service; capture countdown can drift across devices due to device clocks and latency.
+- Joining/leaving during a photo session can interrupt exports. Start a fresh round after everyone is connected.
+- Abrupt browser closes can leave a stale room member until room recreation. Rooms expire in application logic after 24 hours, but Firestore documents are not automatically deleted.
+- Group settings are local to each browser; each participant may choose their own visual styling for the same captured photos.
+- Not verified with four physical devices. Test on real devices before sharing publicly.
