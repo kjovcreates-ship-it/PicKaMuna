@@ -18,31 +18,40 @@
   const valid=Object.keys(artwork);
   function normalize(value){return [...new Set((Array.isArray(value)?value:[value]).filter(v=>valid.includes(v)))];}
   function placements(kind,density){const chosen=normalize(kind);if(!chosen.length)return [];return spots.slice(0,counts[density]||counts.medium).map(([x,y,rotation,size],i)=>{const design=chosen[i%chosen.length];const paths=artwork[design];return {x,y,rotation,size,design,path:paths[(Math.floor(i/chosen.length))%paths.length]};});}
-  // Double contrast outline ensures legibility on bright photos, dark photos and paper.
+  // The exact same unfilled vector strokes are used in both the SVG preview
+  // and the Canvas print renderer. No emoji fonts or filled glyphs are involved.
+  function palette(ink){
+    const light=ink==='#eee4cd'||ink==='#fffaf0';
+    return {foreground:light?'#fffaf0':'#20211f',keyline:light?'#20211f':'#fffaf0'};
+  }
   function draw(ctx,kind,density,rect,ink){
     const items=placements(kind,density);if(!items.length)return;
-    const fill=(ink==='#eee4cd'||ink==='#fffaf0')?'#fffaf0':'#20211f';
-    const opposite=fill==='#fffaf0'?'#20211f':'#fffaf0';
+    const {foreground,keyline}=palette(ink);
     ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
     for(const item of items){
       ctx.save();ctx.translate(rect.x+item.x*rect.w,rect.y+item.y*rect.h);ctx.rotate(item.rotation);
       const size=Math.max(15,Math.min(36,rect.w*.052))*item.size;
       ctx.scale(size/100,size/100);ctx.translate(-50,-50);
       const path=new Path2D(item.path);
-      ctx.strokeStyle=fill;ctx.lineWidth=14;ctx.stroke(path);
-      ctx.strokeStyle=opposite;ctx.lineWidth=6;ctx.stroke(path);
-      if(item.design==='xo'||item.design==='clovers'){ctx.strokeStyle=fill;ctx.lineWidth=7;ctx.stroke(path);}else{ctx.fillStyle=fill;ctx.fill(path,'evenodd');}
+      ctx.strokeStyle=keyline;ctx.lineWidth=14;ctx.stroke(path);
+      ctx.strokeStyle=foreground;ctx.lineWidth=7;ctx.stroke(path);
       ctx.restore();
     }
     ctx.restore();
   }
-  function preview(container,kind,density){
+  function preview(container,kind,density,ink){
     container.replaceChildren();
+    const {foreground,keyline}=palette(ink||'#252722');
     for(const item of placements(kind,density)){
       const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('aria-hidden','true');svg.classList.add('pk-sticker','pk-vector-sticker');
       svg.style.left=(item.x*100)+'%';svg.style.top=(item.y*100)+'%';
       const size=Math.round(20*item.size);svg.style.width=size+'px';svg.style.height=size+'px';svg.style.transform=`translate(-50%,-50%) rotate(${item.rotation}rad)`;
-      const p=document.createElementNS(NS,'path');p.setAttribute('d',item.path);p.setAttribute('fill',item.design==='xo'||item.design==='clovers'?'none':'currentColor');p.setAttribute('stroke','currentColor');p.setAttribute('stroke-width','5');p.setAttribute('stroke-linejoin','round');p.setAttribute('stroke-linecap','round');svg.append(p);container.append(svg);
+      for(const [color,width] of [[keyline,14],[foreground,7]]){
+        const path=document.createElementNS(NS,'path');path.setAttribute('d',item.path);
+        path.setAttribute('fill','none');path.setAttribute('stroke',color);path.setAttribute('stroke-width',String(width));
+        path.setAttribute('stroke-linejoin','round');path.setAttribute('stroke-linecap','round');svg.append(path);
+      }
+      container.append(svg);
     }
   }
   window.PKMStickers={draw,preview,placements};

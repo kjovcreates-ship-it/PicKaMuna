@@ -77,3 +77,7 @@ Sticker update: XO is available again as a selectable design in Solo, Duo and Gr
 
 ### Device-independent stickers (October 2026)
 All eight sticker designs (stars, hearts, sparks, flowers, moons, bolts, clovers, XO) are now custom SVG path artwork. The same paths render using Canvas Path2D for photostrip previews and PNG/JPG exports, avoiding device-specific Unicode font substitutions. Sticker selection, mixed designs, density, and contrast behavior are preserved. Test on Safari/iOS and Chrome/Android before production deployment.
+
+
+### Vector sticker appearance consistency
+The SVG pre-capture preview and Canvas after-capture/export renderer now both use unfilled vector outlines with identical dual-stroke styling. This prevents the earlier solid/emoji-like appearance after capture.
