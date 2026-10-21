@@ -51,3 +51,7 @@ Sticker collection update: Added Flowers, Moons, Bolts, Dots, XOXO and Clovers a
 
 ## Sticker density (new)
 All three booths offer Minimal (3), Balanced (6, default), and Decorated (11) stickers. Solo previews use the same deterministic sticker positions as the exported PNG/JPG canvas. Duo and Group use their canvas composition for both previews and exports. `sticker-engine.js` must be deployed alongside the other JavaScript files. Solo density is saved with local preferences.
+
+
+## Preview / download matching fix
+Completed Solo strips now preview the **same Canvas composition** used for PNG/JPG export. This fixes differing sticker positions, image crops, borders, and paper layout caused by separate CSS and Canvas renderers. Tap a photo in the finished preview to select it for retaking. Duo and Group already render previews through their export Canvas pipeline. JPEG compression may slightly change pixel colors versus the PNG preview.

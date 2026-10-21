@@ -61,7 +61,7 @@ makeGrain();
 function soundClick(){if(!$('sound').checked)return;try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;const ac=new AC(),osc=ac.createOscillator(),gain=ac.createGain();osc.type='square';osc.frequency.setValueAtTime(520,ac.currentTime);osc.frequency.exponentialRampToValueAtTime(130,ac.currentTime+.055);gain.gain.setValueAtTime(.025,ac.currentTime);gain.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.07);osc.connect(gain);gain.connect(ac.destination);osc.start();osc.stop(ac.currentTime+.075);osc.onended=()=>ac.close()}catch(e){console.warn('Sound unavailable',e)}}
 function flashShot(){$('flash').classList.remove('flash-on');void $('flash').offsetWidth;$('flash').classList.add('flash-on');soundClick()}
 function snap(){if(video.readyState<2||!video.videoWidth)throw Error('Camera has not produced a frame yet');const canvas=$('captureCanvas'),w=960,h=720;canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');const vw=video.videoWidth,vh=video.videoHeight,s=Math.max(w/vw,h/vh),sw=w/s,sh=h/s;ctx.save();if($('mirror').checked){ctx.translate(w,0);ctx.scale(-1,1)}ctx.drawImage(video,(vw-sw)/2,(vh-sh)/2,sw,sh,0,0,w,h);ctx.restore();return canvas.toDataURL('image/jpeg',.94)}
-function render(){const count=shotCount(),container=$('stripPhotos');container.replaceChildren();for(let i=0;i<count;i++){const cell=document.createElement('button');cell.type='button';cell.className='photo-cell'+(i===selectedPhoto?' selected-photo':'');cell.setAttribute('aria-label',`Select photo ${i+1} to retake`);cell.dataset.index=i;if(photos[i]){const img=new Image();img.src=photos[i];img.alt=`Photo ${i+1}`;img.style.filter=filters[filter];cell.append(img)}else{const placeholder=document.createElement('div');placeholder.className='empty-photo';placeholder.textContent=String(i+1).padStart(2,'0');cell.append(placeholder)}container.append(cell)}$('stripPreview').dataset.color=paper;$('stripPreview').dataset.frame=frame;$('stripPreview').dataset.layout=layout;$('stripPreview').style.setProperty('--grain-opacity',String(grain/250));$('stripPreview').dataset.sticker=sticker;window.PKMStickers.preview($('stripStickers'),sticker,stickerDensity);$('stripCaption').textContent=$('captionInput').value||' ';[...$('progress').children].forEach((e,i)=>{e.hidden=i>=count;e.classList.toggle('active',i<photos.length)});buttons()}
+function render(){const count=shotCount(),container=$('stripPhotos');container.replaceChildren();for(let i=0;i<count;i++){const cell=document.createElement('button');cell.type='button';cell.className='photo-cell'+(i===selectedPhoto?' selected-photo':'');cell.setAttribute('aria-label',`Select photo ${i+1} to retake`);cell.dataset.index=i;if(photos[i]){const img=new Image();img.src=photos[i];img.alt=`Photo ${i+1}`;img.style.filter=filters[filter];cell.append(img)}else{const placeholder=document.createElement('div');placeholder.className='empty-photo';placeholder.textContent=String(i+1).padStart(2,'0');cell.append(placeholder)}container.append(cell)}$('stripPreview').dataset.color=paper;$('stripPreview').dataset.frame=frame;$('stripPreview').dataset.layout=layout;$('stripPreview').style.setProperty('--grain-opacity',String(grain/250));$('stripPreview').dataset.sticker=sticker;window.PKMStickers.preview($('stripStickers'),sticker,stickerDensity);$('stripCaption').textContent=$('captionInput').value||' ';[...$('progress').children].forEach((e,i)=>{e.hidden=i>=count;e.classList.toggle('active',i<photos.length)});buttons();renderExactPreview()}
 $('stripPhotos').addEventListener('click',e=>{const cell=e.target.closest('.photo-cell');if(!cell)return;selectedPhoto=Number(cell.dataset.index);render();status(photos[selectedPhoto]?`Photo ${selectedPhoto+1} selected. Click RETAKE SELECTED to replace it.`:'This slot is empty. Take your photos first.')});
 async function countdown(token){for(let t=Number($('timer').value);t>0;t--){if(token!==runToken)return false;$('countdown').hidden=false;$('countdown').textContent=t;await wait(1000)}$('countdown').hidden=true;return token===runToken}
 async function takeSession(){if(!stream||running||opening)return;const token=++runToken;running=true;photos=[];selectedPhoto=-1;render();const count=shotCount();status(`Your ${count}-photo session is starting. Strike a pose!`);try{for(let i=0;i<count;i++){if(!await countdown(token))return;photos.push(snap());flashShot();render();status(i===count-1?'Photos ready! Tap any photo to select it for a retake.':`Photo ${i+1} of ${count} captured.`);if(i<count-1)await wait(650)}}catch(e){status(`Photo capture failed: ${e.message}`)}finally{$('countdown').hidden=true;running=false;render()}}
@@ -79,7 +79,61 @@ function evalNever(key,value){switch(key){case 'filter':filter=value;break;case 
 async function loadImage(src){const img=new Image();img.src=src;await img.decode();return img}
 function drawCover(ctx,img,x,y,w,h){const iw=img.naturalWidth,ih=img.naturalHeight,s=Math.max(w/iw,h/ih),sw=w/s,sh=h/s;ctx.drawImage(img,(iw-sw)/2,(ih-sh)/2,sw,sh,x,y,w,h)}
 function stickerDecor(ctx,W,H,pad){window.PKMStickers.draw(ctx,sticker,stickerDensity,{x:pad,y:90,w:W-2*pad,h:H-198},paper==='dark'?'#eee4cd':'#252722')}
-async function exportPhoto(type='image/png'){if(photos.length!==shotCount())return;const btn=type==='image/png'?download:downloadJpg;const original=btn.innerHTML;download.disabled=downloadJpg.disabled=true;btn.textContent='DEVELOPING…';try{const count=shotCount(),W=layout==='grid'?920:720,pad=layout==='grid'?44:47,top=90,gap=layout==='grid'?16:18,cols=layout==='grid'?2:1,photoW=(W-2*pad-gap*(cols-1))/cols,photoH=layout==='grid'?photoW*.75:layout==='duo'?photoW*.85:photoW*.75,extra=frame==='polaroid'?24:0,rows=Math.ceil(count/cols),H=Math.ceil(top+rows*(photoH+extra)+gap*(rows-1)+108),scale=2;const canvas=document.createElement('canvas');canvas.width=W*scale;canvas.height=H*scale;const ctx=canvas.getContext('2d');ctx.scale(scale,scale);ctx.fillStyle=papers[paper];ctx.fillRect(0,0,W,H);const ink=paper==='dark'?'#eee4cd':'#252722';ctx.fillStyle=ink;ctx.font='800 42px Arial,sans-serif';ctx.fillText('PIC KA MUNA',pad,63);const imgs=await Promise.all(photos.map(loadImage));for(let i=0;i<count;i++){const col=i%cols,row=Math.floor(i/cols),x=pad+col*(photoW+gap),y=top+row*(photoH+extra+gap);ctx.save();if(frame==='polaroid'){ctx.fillStyle='#faf5e9';ctx.fillRect(x-6,y-6,photoW+12,photoH+extra+6)}if(frame==='rounded'){ctx.beginPath();ctx.roundRect(x,y,photoW,photoH,Math.min(24,photoW/10));ctx.clip()}ctx.filter=filters[filter];drawCover(ctx,imgs[i],x,y,photoW,photoH);ctx.restore();if(grain>0){ctx.save();ctx.globalAlpha=grain/220;ctx.drawImage(grainCanvas,x,y,photoW,photoH);ctx.restore()}}stickerDecor(ctx,W,H,pad);ctx.fillStyle=ink;ctx.font='22px Georgia,serif';ctx.textAlign='left';ctx.fillText(($('captionInput').value||' ').slice(0,36),pad,H-43,W-pad*2-120);ctx.textAlign='right';ctx.font='16px monospace';ctx.fillText($('stripDate').textContent,W-pad,H-43);const blob=await new Promise(resolve=>canvas.toBlob(resolve,type,type==='image/jpeg'?.94:undefined));if(!blob)throw Error('Image export unavailable');const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`PicKaMuna-${new Date().toISOString().slice(0,10)}.${type==='image/png'?'png':'jpg'}`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);status('Photo strip downloaded. Thanks for stopping by!')}catch(e){status(`Download failed: ${e.message}`)}finally{btn.innerHTML=original;buttons()}}
+async function buildSoloCanvas(preview=false){
+const count=shotCount(),W=layout==='grid'?920:720,pad=layout==='grid'?44:47,top=90,gap=layout==='grid'?16:18,cols=layout==='grid'?2:1,photoW=(W-2*pad-gap*(cols-1))/cols,photoH=layout==='grid'?photoW*.75:layout==='duo'?photoW*.85:photoW*.75,extra=frame==='polaroid'?24:0,rows=Math.ceil(count/cols),H=Math.ceil(top+rows*(photoH+extra)+gap*(rows-1)+108),scale=preview?1:2;const canvas=document.createElement('canvas');canvas.width=W*scale;canvas.height=H*scale;const ctx=canvas.getContext('2d');ctx.scale(scale,scale);ctx.fillStyle=papers[paper];ctx.fillRect(0,0,W,H);const ink=paper==='dark'?'#eee4cd':'#252722';ctx.fillStyle=ink;ctx.font='800 42px Arial,sans-serif';ctx.fillText('PIC KA MUNA',pad,63);const imgs=await Promise.all(photos.map(loadImage));for(let i=0;i<count;i++){const col=i%cols,row=Math.floor(i/cols),x=pad+col*(photoW+gap),y=top+row*(photoH+extra+gap);ctx.save();if(frame==='polaroid'){ctx.fillStyle='#faf5e9';ctx.fillRect(x-6,y-6,photoW+12,photoH+extra+6)}if(frame==='rounded'){ctx.beginPath();ctx.roundRect(x,y,photoW,photoH,Math.min(24,photoW/10));ctx.clip()}ctx.filter=filters[filter];drawCover(ctx,imgs[i],x,y,photoW,photoH);ctx.restore();if(grain>0){ctx.save();ctx.globalAlpha=grain/220;ctx.drawImage(grainCanvas,x,y,photoW,photoH);ctx.restore()}}stickerDecor(ctx,W,H,pad);ctx.fillStyle=ink;ctx.font='22px Georgia,serif';ctx.textAlign='left';ctx.fillText(($('captionInput').value||' ').slice(0,36),pad,H-43,W-pad*2-120);ctx.textAlign='right';ctx.font='16px monospace';ctx.fillText($('stripDate').textContent,W-pad,H-43);return {canvas,W,H,pad,top,gap,cols,photoW,photoH,extra,count};
+}
+async function exportPhoto(type='image/png'){
+ if(photos.length!==shotCount())return;
+ const btn=type==='image/png'?download:downloadJpg,original=btn.innerHTML;
+ download.disabled=downloadJpg.disabled=true;btn.textContent='DEVELOPING…';
+ try{
+  const {canvas}=await buildSoloCanvas(false);
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,type,type==='image/jpeg'?.94:undefined));
+  if(!blob)throw Error('Image export unavailable');
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;
+  a.download=`PicKaMuna-${new Date().toISOString().slice(0,10)}.${type==='image/png'?'png':'jpg'}`;
+  document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),15000);
+  status('Photo strip downloaded. Thanks for stopping by!');
+ }catch(e){status(`Download failed: ${e.message}`)}finally{btn.innerHTML=original;buttons()}
+}
+
+let exactPreviewVersion=0,exactPreviewLayout=null;
+async function renderExactPreview(){
+ const serial=++exactPreviewVersion,strip=$('stripPreview');
+ const prior=$('exactStripImage');
+ if(photos.length!==shotCount()||photos.some(p=>!p)){
+  strip.classList.remove('exact-preview-active');prior?.remove();$('exactSelection')?.remove();exactPreviewLayout=null;return;
+ }
+ try{
+  const result=await buildSoloCanvas(true);
+  if(serial!==exactPreviewVersion)return;
+  exactPreviewLayout=result;
+  let img=$('exactStripImage');
+  if(!img){img=document.createElement('img');img.id='exactStripImage';img.alt='Your finished photostrip — matches the downloaded file';strip.append(img)}
+  img.src=result.canvas.toDataURL('image/png');
+  strip.classList.add('exact-preview-active');
+  let highlight=$('exactSelection');
+  if(!highlight){highlight=document.createElement('div');highlight.id='exactSelection';highlight.setAttribute('aria-hidden','true');strip.append(highlight)}
+  if(selectedPhoto<0){highlight.hidden=true}else{
+   const {W,H,pad,top,gap,cols,photoW,photoH,extra}=result;
+   const col=selectedPhoto%cols,row=Math.floor(selectedPhoto/cols);
+   highlight.style.left=((pad+col*(photoW+gap))/W*100)+'%';
+   highlight.style.top=((top+row*(photoH+extra+gap))/H*100)+'%';
+   highlight.style.width=(photoW/W*100)+'%';
+   highlight.style.height=(photoH/H*100)+'%';highlight.hidden=false;
+  }
+ }catch(e){console.warn('Photostrip preview error:',e)}
+}
+$('stripPreview').addEventListener('click',e=>{
+ if(!e.target.closest('#exactStripImage')||!exactPreviewLayout)return;
+ const r=e.target.getBoundingClientRect(),{W,H,pad,top,gap,cols,photoW,photoH,extra,count}=exactPreviewLayout;
+ const x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;
+ for(let i=0;i<count;i++){
+  const col=i%cols,row=Math.floor(i/cols),a=pad+col*(photoW+gap),b=top+row*(photoH+extra+gap);
+  if(x>=a&&x<=a+photoW&&y>=b&&y<=b+photoH){selectedPhoto=i;render();status(`Photo ${i+1} selected. Click RETAKE SELECTED to replace it.`);break}
+ }
+});
+
 download.addEventListener('click',()=>exportPhoto('image/png'));downloadJpg.addEventListener('click',()=>exportPhoto('image/jpeg'));
 window.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT','BUTTON'].includes(document.activeElement?.tagName))return;if(e.code==='Space'&&!e.repeat){e.preventDefault();if(!running&&!opening&&stream)takeSession()}if(e.key.toLowerCase()==='r'&&!e.repeat&&!running&&selectedPhoto>=0&&stream)retakeOne.click()});
 window.addEventListener('pagehide',stopCamera);restorePrefs();render();

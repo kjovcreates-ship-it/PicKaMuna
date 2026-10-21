@@ -173,3 +173,10 @@ footer a:hover{color:#555}
 .strip[data-color="dark"] .strip-stickers .pk-sticker{color:#eee4cd;text-shadow:0 1px 2px rgba(0,0,0,.35)}
 /* Disable old two-sticker pseudo-elements in favor of real density-aware stickers. */
 .strip-stickers::before,.strip-stickers::after{content:none!important;display:none!important}
+
+/* Exact export renderer: finished Solo preview is drawn by the same canvas pipeline as download. */
+.strip.exact-preview-active{padding:0;cursor:pointer;overflow:visible}
+.strip.exact-preview-active>.strip-top,.strip.exact-preview-active>.strip-photos,.strip.exact-preview-active>.strip-stickers,.strip.exact-preview-active>.strip-bottom{display:none}
+.strip #exactStripImage{display:block;width:100%;height:auto;cursor:crosshair}
+.strip #exactSelection{position:absolute;z-index:4;border:2px solid #777;outline:1px solid #fff;pointer-events:none;box-sizing:border-box}
+.strip #exactSelection[hidden]{display:none}
