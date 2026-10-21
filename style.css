@@ -139,3 +139,10 @@ footer a:hover{color:#555}
 @media(max-width:680px){.site-header{height:70px}.masthead{padding:44px 22px 32px;display:block;min-height:0}.masthead h1{font-size:clamp(58px,13vw,86px);margin:24px 0 18px}.masthead p{font-size:14px}.hero-art{height:230px;width:100%;margin:16px auto 0}.hero-film{width:105px;padding:7px;gap:4px}.hero-shot{height:42px}.hero-shot:before{width:28px;height:28px}.hero-shot:after{width:72px;height:48px}.hero-film-front{transform:rotate(-7deg) translate(-27px,-2px)}.hero-film-back{transform:rotate(10deg) translate(49px,-2px)}.hero-art-caption{bottom:2px}.mode-intro{padding-top:20px}.mode-intro span:last-child{display:none}.mode-switch{margin-bottom:28px;gap:7px}.mode-switch .mode-button{min-height:75px;padding:12px 8px;font-size:9px;letter-spacing:0}.studio{margin-bottom:45px}.together{margin-bottom:45px}.viewfinder{border-width:7px}.download-actions{grid-template-columns:1fr 1fr}}
 @media(max-width:390px){.mode-switch .mode-button{font-size:8px;padding:10px 5px}.download-actions{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.button,.mode-switch .mode-button{transition:none}}
+
+/* Real photo strips replacing the decorative silhouette placeholders */
+.hero-art{width:clamp(270px,36vw,480px);height:auto;min-height:380px;display:flex;align-items:center;justify-content:center}
+.hero-photo{display:block;width:100%;height:auto;object-fit:contain;mix-blend-mode:multiply}
+.hero-art-caption{right:4%;bottom:2%;z-index:2}
+@media(max-width:1100px){.hero-art{width:clamp(250px,34vw,390px);min-height:310px}}
+@media(max-width:680px){.hero-art{width:min(100%,390px);height:auto;min-height:0;margin:14px auto 0}.hero-photo{width:100%}.hero-art-caption{bottom:2%}}
