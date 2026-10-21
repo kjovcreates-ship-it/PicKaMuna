@@ -30,3 +30,13 @@ Group Booth supports 2–4 participants; for exactly two, the existing Duo Booth
 
 ## Group live-video performance update
 Group camera requests now target 640x480 at 15 fps and each outgoing peer connection attempts to cap video bitrate at 300 kbps. If the device rejects the constrained camera request, it falls back to default video. Photo transfer and composition are unchanged. These caps can improve upload bandwidth use but cannot eliminate all lag, especially with poor networks or without a TURN relay. Test 2, 3, and 4 devices on actual networks.
+
+
+## Connection reliability update
+- Duo and Group now attempt up to four ICE restarts when a connection drops.
+- Group restart negotiation is initiated only by the deterministic offerer to reduce collisions.
+- STUN fallback list expanded. **A TURN server is NOT bundled**: to make cross-network calls reliably, supply valid TURN credentials in `firebase-config.js` (`turnConfig`).
+- Do not publicly deploy long-lived TURN secrets in frontend code. Use short-lived credentials delivered by a trusted backend for production.
+- Existing Firestore rules remain unchanged; these are insecure demo rules and should not be used for a public launch.
+- ICE restart cannot recover a closed browser tab, expired room, unavailable network, or unsupported relay route.
+- This update was syntax-checked, but requires real-device tests across Wi-Fi and mobile data.

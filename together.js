@@ -1,4 +1,4 @@
-import {firebaseConfig, iceServers} from './firebase-config.js';
+import {firebaseConfig, iceServers, hasTurn} from './firebase-config.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
 import {getFirestore,doc,setDoc,getDoc,updateDoc,onSnapshot,collection,addDoc,serverTimestamp,deleteDoc} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
 
@@ -7,13 +7,13 @@ const message=t=>{el('togetherStatus').textContent=t};
 const configured=firebaseConfig.apiKey!=='REPLACE_ME' && firebaseConfig.projectId!=='REPLACE_ME';
 let db=null,roomRef=null,pc=null,channel=null,localStream=null,remoteStream=null,unsubs=[],isHost=false,connected=false,busy=false,round=0,localShots=[],remoteShots=[],incoming={},remoteReady=false;
 let activeRoom='';
-let pendingCandidates=[],connectionTimer=null;
+let pendingCandidates=[],connectionTimer=null, restartTimer=null, restartAttempts=0, lastOfferSdp="", lastAnswerSdp="";
 if(configured){try{db=getFirestore(initializeApp(firebaseConfig))}catch(e){message('Firebase setup error: '+e.message)}}else message('Together mode needs Firebase setup. See README.md. Solo booth still works.');
 const error=e=>{console.error('[PicKaMuna Together]',e);message(e?.message||String(e))};
 function code(){const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const a=new Uint32Array(6);crypto.getRandomValues(a);return [...a].map(n=>alphabet[n%alphabet.length]).join('')}
 function setUI(){el('createRoom').disabled=!db||!!roomRef;el('joinRoom').disabled=!db||!!roomRef;el('leaveRoom').hidden=!roomRef;el('roomDetails').hidden=!roomRef;el('togetherStart').disabled=!isHost||!connected||!remoteReady||busy||el('togetherRemote').readyState<2;el('togetherDownload').disabled=!(localShots.filter(Boolean).length===4&&remoteShots.filter(Boolean).length===4);el('togetherDownloadJpg').disabled=el('togetherDownload').disabled;el('localState').textContent=localStream?'LIVE':'OFF AIR';el('peerState').textContent=connected?'CONNECTED':roomRef?'CONNECTING':'WAITING'}
 function stopMedia(){localStream?.getTracks().forEach(t=>t.stop());localStream=null;el('togetherLocal').srcObject=null;el('togetherRemote').srcObject=null}
-async function teardown(){clearTimeout(connectionTimer);pendingCandidates=[];unsubs.forEach(f=>f());unsubs=[];channel?.close();channel=null;pc?.close();pc=null;stopMedia();roomRef=null;activeRoom='';isHost=false;connected=false;remoteReady=false;busy=false;localShots=[];remoteShots=[];el('togetherPhotos').replaceChildren();el('togetherCountdown').hidden=true;setUI()}
+async function teardown(){clearTimeout(connectionTimer);clearTimeout(restartTimer);restartAttempts=0;lastOfferSdp="";lastAnswerSdp="";pendingCandidates=[];unsubs.forEach(f=>f());unsubs=[];channel?.close();channel=null;pc?.close();pc=null;stopMedia();roomRef=null;activeRoom='';isHost=false;connected=false;remoteReady=false;busy=false;localShots=[];remoteShots=[];el('togetherPhotos').replaceChildren();el('togetherCountdown').hidden=true;setUI()}
 async function leave(){const ref=roomRef,host=isHost;await teardown();if(ref&&host){try{await updateDoc(ref,{status:'closed'})}catch(e){console.warn(e)}}message('Left the room. You can start a new one.');history.replaceState(null,'',location.pathname)}
 el('leaveRoom').addEventListener('click',leave);
 window.addEventListener('pagehide',()=>{pc?.close();stopMedia()});
@@ -22,19 +22,35 @@ async function applyRemote(description){await pc.setRemoteDescription(new RTCSes
 async function receiveCandidate(data){const candidate=new RTCIceCandidate(data);if(!pc?.remoteDescription){pendingCandidates.push(candidate);return}try{await pc.addIceCandidate(candidate)}catch(e){console.warn('ICE:',e)}}
 function send(obj){if(channel?.readyState==='open')channel.send(JSON.stringify(obj))}
 async function camera(){localStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});el('togetherLocal').srcObject=localStream;await el('togetherLocal').play();setUI()}
+async function restartDuo(){
+  if(!isHost||!pc||!roomRef||pc.signalingState!=='stable'||restartAttempts>=4)return;
+  restartAttempts++;
+  try{
+    message(`Reconnecting camera (${restartAttempts}/4)…`);
+    pc.restartIce();
+    const offer=await pc.createOffer({iceRestart:true});
+    await pc.setLocalDescription(offer);
+    await updateDoc(roomRef,{offer:{type:offer.type,sdp:offer.sdp},answer:null});
+  }catch(e){console.warn('Duo ICE restart:',e);scheduleDuoRestart()}
+}
+function scheduleDuoRestart(){
+  if(!isHost||!roomRef||!pc||pc.connectionState==='closed'||restartAttempts>=4)return;
+  clearTimeout(restartTimer);
+  restartTimer=setTimeout(()=>{if(pc&&pc.connectionState!=='connected')restartDuo()},3500+restartAttempts*2500);
+}
 async function connect(){pc=new RTCPeerConnection({iceServers});remoteStream=new MediaStream();el('togetherRemote').srcObject=remoteStream;
   localStream.getTracks().forEach(track=>pc.addTrack(track,localStream));
   pc.ontrack=e=>{for(const track of e.streams[0].getTracks()){if(!remoteStream.getTracks().some(t=>t.id===track.id))remoteStream.addTrack(track)}el('togetherRemote').play().catch(()=>message('Tap the remote video to enable playback.'))};
   el('togetherRemote').addEventListener('click',()=>el('togetherRemote').play().catch(error),{once:true});
-  pc.onconnectionstatechange=()=>{connected=pc.connectionState==='connected';setUI();if(pc.connectionState==='failed')message('Peer connection failed. Try a new room, or use another network. A TURN server may be required.');else if(connected)message('Connected! Both cameras are ready.');else if(pc.connectionState==='disconnected')message('Connection interrupted. Trying to reconnect…')};
+  pc.onconnectionstatechange=()=>{connected=pc.connectionState==='connected';setUI();if(connected){clearTimeout(restartTimer);restartAttempts=0;message('Connected! Both cameras are ready.')}else if(pc.connectionState==='failed'||pc.connectionState==='disconnected'){message('Connection interrupted. Attempting recovery…'+(hasTurn?'':' A TURN relay may be required.'));scheduleDuoRestart()}};
   pc.onicecandidate=e=>{if(e.candidate)addDoc(collection(roomRef,isHost?'hostCandidates':'guestCandidates'),e.candidate.toJSON()).catch(error)};
   watch(collection(roomRef,isHost?'guestCandidates':'hostCandidates'),snapshot=>snapshot.docChanges().forEach(change=>{if(change.type==='added')receiveCandidate(change.doc.data())}));
   if(isHost){channel=pc.createDataChannel('photo-strips',{ordered:true});setupChannel(channel)}else pc.ondatachannel=e=>{channel=e.channel;setupChannel(channel)};
 }
 function setupChannel(ch){ch.onopen=()=>{send({type:'ready'});remoteReady=true;setUI()};ch.onclose=()=>{remoteReady=false;setUI()};ch.onmessage=event=>{let data;try{data=JSON.parse(event.data)}catch{return}receive(data)}}
 function receive(d){if(d.type==='ready'){remoteReady=true;setUI()}if(d.type==='begin'){startRound(d.round,d.startAt)}if(d.type==='shot-start'){incoming[d.index]=''}if(d.type==='shot-chunk'){incoming[d.index]=(incoming[d.index]||'')+d.value}if(d.type==='shot-end'){if((incoming[d.index]||'').startsWith('data:image/jpeg;base64,')){remoteShots[d.index]=incoming[d.index];renderPhotos()}delete incoming[d.index];setUI()}if(d.type==='done'){message('Both photo sets are being prepared. Download when all eight photos arrive.')}}
-async function createRoom(){if(!db)return;try{await teardown();isHost=true;activeRoom=code();roomRef=doc(db,'photoboothRooms',activeRoom);await setDoc(roomRef,{status:'waiting',createdAt:serverTimestamp()});await camera();await connect();const offer=await pc.createOffer();await pc.setLocalDescription(offer);await updateDoc(roomRef,{offer:{type:offer.type,sdp:offer.sdp}});watch(roomRef,s=>{const d=s.data();if(!d)return;if(d.status==='closed'){message('Room closed.');return}if(d.answer&&!pc.remoteDescription){applyRemote(d.answer).catch(error)}});showRoom();message('Room created. Send the invite link to your person.');}catch(e){await teardown();error(e)}}
-async function joinRoom(value){if(!db)return;try{await teardown();activeRoom=value.toUpperCase().trim();if(!/^[A-HJ-NP-Z2-9]{6}$/.test(activeRoom))throw Error('Enter a valid six-character room code.');roomRef=doc(db,'photoboothRooms',activeRoom);const snapshot=await getDoc(roomRef);if(!snapshot.exists()||snapshot.data().status==='closed'||!snapshot.data().offer)throw Error('Room not found or no longer available.');if(snapshot.data().answer)throw Error('This room was already joined. Ask the host to create a fresh room.');await camera();await connect();await applyRemote(snapshot.data().offer);const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await updateDoc(roomRef,{answer:{type:answer.type,sdp:answer.sdp},status:'joined'});watch(roomRef,s=>{if(s.data()?.status==='closed'){message('Host closed the room.');channel?.close();pc?.close();connected=false;setUI()}});showRoom();message('Joining room. Waiting for peer connection…')}catch(e){await teardown();error(e)}}
+async function createRoom(){if(!db)return;try{await teardown();isHost=true;activeRoom=code();roomRef=doc(db,'photoboothRooms',activeRoom);await setDoc(roomRef,{status:'waiting',createdAt:serverTimestamp()});await camera();await connect();const offer=await pc.createOffer();await pc.setLocalDescription(offer);await updateDoc(roomRef,{offer:{type:offer.type,sdp:offer.sdp}});watch(roomRef,s=>{const d=s.data();if(!d||!pc)return;if(d.status==='closed'){message('Room closed.');return}if(d.answer?.sdp&&d.answer.sdp!==lastAnswerSdp&&pc.signalingState==='have-local-offer'){lastAnswerSdp=d.answer.sdp;applyRemote(d.answer).catch(error)}});showRoom();message('Room created. Send the invite link to your person.');}catch(e){await teardown();error(e)}}
+async function joinRoom(value){if(!db)return;try{await teardown();activeRoom=value.toUpperCase().trim();if(!/^[A-HJ-NP-Z2-9]{6}$/.test(activeRoom))throw Error('Enter a valid six-character room code.');roomRef=doc(db,'photoboothRooms',activeRoom);const snapshot=await getDoc(roomRef);if(!snapshot.exists()||snapshot.data().status==='closed'||!snapshot.data().offer)throw Error('Room not found or no longer available.');if(snapshot.data().answer)throw Error('This room was already joined. Ask the host to create a fresh room.');await camera();await connect();await applyRemote(snapshot.data().offer);const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await updateDoc(roomRef,{answer:{type:answer.type,sdp:answer.sdp},status:'joined'});lastOfferSdp=snapshot.data().offer.sdp;watch(roomRef,s=>{const d=s.data();if(!d||!pc)return;if(d.status==='closed'){message('Host closed the room.');channel?.close();pc?.close();connected=false;setUI();return}if(d.offer?.sdp&&d.offer.sdp!==lastOfferSdp&&pc.signalingState==='stable'){lastOfferSdp=d.offer.sdp;(async()=>{await applyRemote(d.offer);const a=await pc.createAnswer();await pc.setLocalDescription(a);await updateDoc(roomRef,{answer:{type:a.type,sdp:a.sdp}})})().catch(error)}});showRoom();message('Joining room. Waiting for peer connection…')}catch(e){await teardown();error(e)}}
 function showRoom(){el('roomDisplay').textContent=activeRoom;el('roomCode').value=activeRoom;history.replaceState(null,'',`${location.pathname}?room=${activeRoom}`);setUI()}
 el('createRoom').addEventListener('click',createRoom);
 el('joinRoom').addEventListener('click',()=>joinRoom(el('roomCode').value));
