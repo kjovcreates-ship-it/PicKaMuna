@@ -72,3 +72,5 @@ Sticker choices now expand/collapse in Solo, Duo and Group. Dots and XOXO were r
 
 ## Mixed sticker designs
 Sticker chooser now supports multiple selected designs in Solo, Duo and Group. Click a selected design again to remove it; NONE clears all selections. Light/Medium/Heavy set the total sticker count, shared across selected designs. Previews and PNG/JPG exports use the same deterministic sticker engine. Solo selections are saved to local preferences.
+
+Sticker update: XO is available again as a selectable design in Solo, Duo and Group, including mixed selections and exports.

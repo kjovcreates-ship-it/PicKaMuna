@@ -8,7 +8,7 @@ let stream=null,photos=[],filter='vintage',paper='cream',frame='classic',layout=
 const shotCount=()=>layout==='six'?6:layout==='duo'?2:4;
 $('year').textContent=new Date().getFullYear();$('stripDate').textContent=new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
 function status(msg){$('helper').textContent=msg}
-function buttons(){startCamera.disabled=opening||running;startSession.disabled=!stream||running||opening;retakeAll.disabled=running||photos.length===0;retakeOne.disabled=running||!stream||selectedPhoto<0||!photos[selectedPhoto];download.disabled=photos.length!==shotCount()||running;downloadJpg.disabled=download.disabled;$('timer').disabled=running;$('cameraSelect').disabled=running||opening}
+function buttons(){const count=shotCount();const label=startSession.firstChild;if(label&&label.nodeType===Node.TEXT_NODE)label.textContent=`TAKE ${count} PHOTOS `;startCamera.disabled=opening||running;startSession.disabled=!stream||running||opening;retakeAll.disabled=running||photos.length===0;retakeOne.disabled=running||!stream||selectedPhoto<0||!photos[selectedPhoto];download.disabled=photos.length!==shotCount()||running;downloadJpg.disabled=download.disabled;$('timer').disabled=running;$('cameraSelect').disabled=running||opening;$('layouts').querySelectorAll('button').forEach(b=>b.disabled=running)}
 function stopCamera(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.pause();video.srcObject=null;video.classList.remove('ready');video.style.opacity=''}
 function showError(msg){$('cameraError').hidden=false;$('cameraError').textContent=msg;status(msg)}
 function cameraOff(){video.classList.remove('ready');$('cameraEmpty').hidden=false;$('cameraStatus').textContent='● OFF AIR'}
@@ -37,7 +37,7 @@ async function cameraOn(){
     // play() success means playback started; dimensions may arrive shortly after.
     $('cameraStatus').textContent='● CAMERA LIVE';
     startCamera.innerHTML='RESTART CAMERA <span>'+PK_ARROW_UP_RIGHT+'</span>';
-    status('Camera ready. Pick a countdown, then take your four photos.');
+    status(`Camera ready. Pick a countdown, then take your ${shotCount()} photos.`);
     const track=media.getVideoTracks()[0];
     track.addEventListener('ended',()=>{if(stream===media){stopCamera();cameraOff();status('Camera disconnected. Turn it on again.');buttons()}});
     cameraList().catch(console.warn);
@@ -68,7 +68,7 @@ async function takeSession(){if(!stream||running||opening)return;const token=++r
 startSession.addEventListener('click',takeSession);
 retakeOne.addEventListener('click',async()=>{if(running||!stream||selectedPhoto<0||!photos[selectedPhoto])return;const index=selectedPhoto,token=++runToken;running=true;render();status(`Retaking photo ${index+1}…`);try{if(!await countdown(token))return;photos[index]=snap();flashShot();status(`Photo ${index+1} replaced!`)}catch(e){status(`Retake failed: ${e.message}`)}finally{$('countdown').hidden=true;running=false;render()}});
 retakeAll.addEventListener('click',()=>{runToken++;photos=[];selectedPhoto=-1;running=false;$('countdown').hidden=true;render();status('All clear. Take another set whenever you’re ready.')});
-function group(id,key,setter){$(id).addEventListener('click',e=>{const b=e.target.closest(`button[data-${key}]`);if(!b)return;$(id).querySelectorAll('button').forEach(x=>x.classList.toggle('selected',x===b));setter(b.dataset[key]);render();savePrefs()})}
+function group(id,key,setter){$(id).addEventListener('click',e=>{const b=e.target.closest(`button[data-${key}]`);if(!b||running)return;$(id).querySelectorAll('button').forEach(x=>x.classList.toggle('selected',x===b));setter(b.dataset[key]);render();savePrefs()})}
 group('filters','filter',v=>filter=v);group('colors','color',v=>paper=v);group('frames','frame',v=>frame=v);$('stickers').addEventListener('click',e=>{const b=e.target.closest('button[data-sticker]');if(!b)return;sticker=window.PKMStickerChoice.toggle(sticker,b.dataset.sticker);window.PKMStickerChoice.update('stickers','sticker',sticker);render();savePrefs()});$('stickerDensity').addEventListener('change',e=>{stickerDensity=e.target.value;render();savePrefs()});
 group('layouts','layout',v=>{if(photos.length&&v!==layout){photos=[];selectedPhoto=-1;status('Layout changed. Start a new photo session.')}layout=v});
 $('captionInput').addEventListener('input',render);$('grain').addEventListener('input',e=>{grain=Number(e.target.value);$('grainValue').textContent=grain+'%';render();savePrefs()});

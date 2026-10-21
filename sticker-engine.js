@@ -1,7 +1,7 @@
 /* Shared deterministic sticker placement: same layout for preview and PNG/JPG exports. */
 (function(){
   'use strict';
-  const glyphs={stars:['★','☆','✦'],hearts:['♥','♡','♥'],spark:['✳','✦','✳'],flowers:['❀','✿','❀'],moons:['☾','☽','☾'],bolts:['ϟ','ϟ','ϟ'],clovers:['♣','♧','♣']};
+  const glyphs={stars:['★','☆','✦'],hearts:['♥','♡','♥'],spark:['✳','✦','✳'],flowers:['❀','✿','❀'],moons:['☾','☽','☾'],bolts:['ϟ','ϟ','ϟ'],clovers:['♣','♧','♣'],xo:['XO','X♡O','XO']};
   const counts={light:3,medium:6,heavy:11};
   // Fixed normalized positions keep the preview and exported files consistent.
   const spots=[[.06,.15,-.23,.9],[.94,.29,.17,1.05],[.08,.44,.13,.8],[.93,.60,-.18,1.0],[.10,.79,.22,.95],[.89,.89,-.14,.9],[.08,.29,.15,.8],[.92,.44,-.25,.8],[.07,.67,-.13,.85],[.92,.75,.2,.9],[.51,.97,-.09,.75]];
