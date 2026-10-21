@@ -26,3 +26,7 @@ Group Booth supports 2–4 participants; for exactly two, the existing Duo Booth
 - Abrupt browser closes can leave a stale room member until room recreation. Rooms expire in application logic after 24 hours, but Firestore documents are not automatically deleted.
 - Group settings are local to each browser; each participant may choose their own visual styling for the same captured photos.
 - Not verified with four physical devices. Test on real devices before sharing publicly.
+
+
+## Group live-video performance update
+Group camera requests now target 640x480 at 15 fps and each outgoing peer connection attempts to cap video bitrate at 300 kbps. If the device rejects the constrained camera request, it falls back to default video. Photo transfer and composition are unchanged. These caps can improve upload bandwidth use but cannot eliminate all lag, especially with poor networks or without a TURN relay. Test 2, 3, and 4 devices on actual networks.
